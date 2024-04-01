@@ -42,29 +42,29 @@ namespace LegacyApp
 
         private bool CreditLimitService(Client client, User user)
         {
-            if (client.Type == "VeryImportantClient")
+            switch (client.Type)
             {
-                user.HasCreditLimit = false;
+                case "VeryImportantClient" : 
+                    user.HasCreditLimit = false;
+                    break;
+                case "ImportantClient" :
+                    using (var userCreditService = new UserCreditService())
+                    {
+                        int creditLimit = userCreditService.GetCreditLimit(user.LastName, user.DateOfBirth);
+                        creditLimit = creditLimit * 2;
+                        user.CreditLimit = creditLimit;
+                    }
+                    break;
+                default :
+                    user.HasCreditLimit = true;
+                    using (var userCreditService = new UserCreditService())
+                    {
+                        int creditLimit = userCreditService.GetCreditLimit(user.LastName, user.DateOfBirth);
+                        user.CreditLimit = creditLimit;
+                    }
+                    break;
             }
-            else if (client.Type == "ImportantClient")
-            {
-                using (var userCreditService = new UserCreditService())
-                {
-                    int creditLimit = userCreditService.GetCreditLimit(user.LastName, user.DateOfBirth);
-                    creditLimit = creditLimit * 2;
-                    user.CreditLimit = creditLimit;
-                }
-            }
-            else
-            {
-                user.HasCreditLimit = true;
-                using (var userCreditService = new UserCreditService())
-                {
-                    int creditLimit = userCreditService.GetCreditLimit(user.LastName, user.DateOfBirth);
-                    user.CreditLimit = creditLimit;
-                }
-            }
-
+            
             if (user.HasCreditLimit && user.CreditLimit < 500)
             {
                 return false;
