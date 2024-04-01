@@ -4,18 +4,29 @@ namespace LegacyApp
 {
     public class UserService
     {
-        public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
+        private bool NameIsFilled(String firstName, String lastName)
         {
             if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
             {
                 return false;
             }
 
+            return true;
+        }
+
+        private bool EmailIsCorrect(String email)
+        {
             if (!email.Contains("@") && !email.Contains("."))
             {
                 return false;
             }
 
+            return true;
+
+        }
+
+        private bool AgeIsApproprriate(DateTime dateOfBirth)
+        {
             var now = DateTime.Now;
             int age = now.Year - dateOfBirth.Year;
             if (now.Month < dateOfBirth.Month || (now.Month == dateOfBirth.Month && now.Day < dateOfBirth.Day)) age--;
@@ -25,18 +36,12 @@ namespace LegacyApp
                 return false;
             }
 
-            var clientRepository = new ClientRepository();
-            var client = clientRepository.GetById(clientId);
+            return true;
 
-            var user = new User
-            {
-                Client = client,
-                DateOfBirth = dateOfBirth,
-                EmailAddress = email,
-                FirstName = firstName,
-                LastName = lastName
-            };
+        }
 
+        private bool CreditLimitService(Client client, User user)
+        {
             if (client.Type == "VeryImportantClient")
             {
                 user.HasCreditLimit = false;
@@ -64,6 +69,38 @@ namespace LegacyApp
             {
                 return false;
             }
+
+            return true;
+
+        }
+
+
+
+        public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
+        {
+            if (!NameIsFilled(firstName, lastName))
+                return false;
+            if (!EmailIsCorrect(email))
+                return false;
+            if (!AgeIsApproprriate(dateOfBirth))
+                return false;
+            
+
+            var clientRepository = new ClientRepository();
+            var client = clientRepository.GetById(clientId);
+
+            var user = new User
+            {
+                Client = client,
+                DateOfBirth = dateOfBirth,
+                EmailAddress = email,
+                FirstName = firstName,
+                LastName = lastName
+            };
+            
+            if (!CreditLimitService(client, user))
+                return false;
+            
 
             UserDataAccess.AddUser(user);
             return true;
