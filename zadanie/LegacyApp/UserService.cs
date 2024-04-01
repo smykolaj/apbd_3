@@ -2,45 +2,37 @@
 
 namespace LegacyApp
 {
-    public class UserService
+
+    public interface IValidator
     {
-        private bool NameIsFilled(String firstName, String lastName)
-        {
-            if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
-            {
-                return false;
-            }
+        bool NameIsFilled(String firstName, String lastName);
+        bool EmailIsCorrect(String email);
+        bool AgeIsAppropriate(DateTime dateOfBirth);
+        bool CreditLimitExists(Client client, User user);
+    }
 
-            return true;
+    public class Validator : IValidator
+    {
+        public bool NameIsFilled(String firstName, String lastName)
+        {
+            return !string.IsNullOrEmpty(firstName) && !string.IsNullOrEmpty(lastName);
         }
 
-        private bool EmailIsCorrect(String email)
+        public bool EmailIsCorrect(String email)
         {
-            if (!email.Contains("@") && !email.Contains("."))
-            {
-                return false;
-            }
-
-            return true;
-
+            return email.Contains("@") || email.Contains(".");
         }
 
-        private bool AgeIsApproprriate(DateTime dateOfBirth)
+        public bool AgeIsAppropriate(DateTime dateOfBirth)
         {
             var now = DateTime.Now;
-            int age = now.Year - dateOfBirth.Year;
+            var age = now.Year - dateOfBirth.Year;
             if (now.Month < dateOfBirth.Month || (now.Month == dateOfBirth.Month && now.Day < dateOfBirth.Day)) age--;
 
-            if (age < 21)
-            {
-                return false;
-            }
-
-            return true;
-
+            return age >= 21;
         }
 
-        private bool CreditLimitService(Client client, User user)
+        public bool CreditLimitExists(Client client, User user)
         {
             switch (client.Type)
             {
@@ -50,8 +42,8 @@ namespace LegacyApp
                 case "ImportantClient" :
                     using (var userCreditService = new UserCreditService())
                     {
-                        int creditLimit = userCreditService.GetCreditLimit(user.LastName, user.DateOfBirth);
-                        creditLimit = creditLimit * 2;
+                        var creditLimit = userCreditService.GetCreditLimit(user.LastName, user.DateOfBirth);
+                        creditLimit *= 2;
                         user.CreditLimit = creditLimit;
                     }
                     break;
@@ -65,24 +57,24 @@ namespace LegacyApp
                     break;
             }
             
-            if (user.HasCreditLimit && user.CreditLimit < 500)
-            {
-                return false;
-            }
-
-            return true;
-
+            return !user.HasCreditLimit || user.CreditLimit >= 500;
         }
 
+        
+    }
 
 
+    public class UserService
+    {
+        
         public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
         {
-            if (!NameIsFilled(firstName, lastName))
+            IValidator validator = new Validator();
+            if (!validator.NameIsFilled(firstName, lastName))
                 return false;
-            if (!EmailIsCorrect(email))
+            if (!validator.EmailIsCorrect(email))
                 return false;
-            if (!AgeIsApproprriate(dateOfBirth))
+            if (!validator.AgeIsAppropriate(dateOfBirth))
                 return false;
             
 
@@ -98,7 +90,7 @@ namespace LegacyApp
                 LastName = lastName
             };
             
-            if (!CreditLimitService(client, user))
+            if (!validator.CreditLimitExists(client, user))
                 return false;
             
 
