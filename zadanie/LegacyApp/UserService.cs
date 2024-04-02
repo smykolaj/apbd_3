@@ -66,15 +66,20 @@ namespace LegacyApp
 
     public class UserService
     {
-        
+        private readonly IValidator _validator;
+        public UserService()
+        {
+            _validator = new Validator();
+        }
+
         public bool AddUser(string firstName, string lastName, string email, DateTime dateOfBirth, int clientId)
         {
-            IValidator validator = new Validator();
-            if (!validator.NameIsFilled(firstName, lastName))
+            
+            if (!_validator.NameIsFilled(firstName, lastName))
                 return false;
-            if (!validator.EmailIsCorrect(email))
+            if (!_validator.EmailIsCorrect(email))
                 return false;
-            if (!validator.AgeIsAppropriate(dateOfBirth))
+            if (!_validator.AgeIsAppropriate(dateOfBirth))
                 return false;
             
 
@@ -90,7 +95,7 @@ namespace LegacyApp
                 LastName = lastName
             };
             
-            if (!validator.CreditLimitExists(client, user))
+            if (!_validator.CreditLimitExists(client, user))
                 return false;
             
 
